@@ -2,6 +2,7 @@
 import os
 
 import streamlit as st
+from fpdf import FPDF
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -230,6 +231,41 @@ def create_student_view(content):
 
     return "\n".join(hidden_lines)
 
+def create_pdf(content):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Helvetica", size=11)
+
+    for line in content.splitlines():
+        clean_line = (
+            line.replace("**", "")
+            .replace("#", "")
+            .replace("📝", "")
+            .replace("👨‍🏫", "")
+            .replace("👨‍🎓", "")
+            .replace("—", "-")
+            .replace("’", "'")
+            .replace("“", '"')
+            .replace("”", '"')
+        )
+
+        # Standart PDF şriftinin dəstəkləmədiyi simvolları təmizləyir
+        clean_line = clean_line.encode(
+            "latin-1",
+            errors="replace"
+        ).decode("latin-1")
+
+        pdf.multi_cell(
+            w=0,
+            h=7,
+            text=clean_line if clean_line else " ",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
+
+    return bytes(pdf.output())
+
 def generate_with_openai(prompt):
     api_key = os.getenv("OPENAI_API_KEY")
 
@@ -326,6 +362,15 @@ Use clear, age-appropriate, and academically correct language.
             use_container_width=True,
         )
 
+        pdf_data = create_pdf(display_result)
+
+        st.download_button(
+            label="📄 Download Assessment as PDF",
+            data=pdf_data,
+            file_name="assessment.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
 else:
     st.info(
         "Enter assessment information in the sidebar and click "
