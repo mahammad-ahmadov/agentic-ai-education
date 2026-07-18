@@ -94,7 +94,29 @@ with st.sidebar:
         type="primary",
         use_container_width=True,
     )
+     
+st.divider()
 
+estimated_time = number_questions * 2
+
+st.subheader("📋 Assessment Summary")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.write(f"**Grade:** {grade}")
+    st.write(f"**Subject:** {subject}")
+    st.write(f"**Topic:** {topic}")
+
+with col2:
+    st.write(f"**Difficulty:** {difficulty}")
+    st.write(f"**Questions:** {number_questions}")
+    st.write(f"**Estimated Time:** {estimated_time} minutes") 
+view_mode = st.radio(
+    "👁️ View Mode",
+    ["👨‍🏫 Teacher View", "👨‍🎓 Student View"],
+    horizontal=True,
+)
 
 def demo_assessment(
     grade,
@@ -191,7 +213,22 @@ This AI agent receives teacher-defined goals, analyzes assessment
 requirements, organizes the assessment structure, and generates
 questions, answers, and learning-level classifications.
 """
+def create_student_view(content):
+    hidden_lines = []
 
+    for line in content.splitlines():
+        if line.startswith("**Answer:**"):
+            continue
+        if line.startswith("**Sample Answer:**"):
+            continue
+        if line.startswith("**Bloom's Level:**"):
+            continue
+        if line.startswith("**Difficulty:**"):
+            continue
+
+        hidden_lines.append(line)
+
+    return "\n".join(hidden_lines)
 
 def generate_with_openai(prompt):
     api_key = os.getenv("OPENAI_API_KEY")
@@ -235,7 +272,7 @@ if generate:
         st.warning("Please select at least one question type.")
 
     else:
-        with st.spinner("Generating assessment..."):
+        with st.spinner("🤖 AI is analyzing your inputs and generating the assessment..."):
             prompt = f"""
 Create a professional educational assessment.
 
@@ -274,11 +311,16 @@ Use clear, age-appropriate, and academically correct language.
 
         st.success("Assessment generated successfully.")
 
-        st.markdown(result)
+        if view_mode == "👨‍🎓 Student View":
+                display_result = create_student_view(result)
+        else:
+                display_result = result
+
+        st.markdown(display_result)
 
         st.download_button(
             label="Download Assessment as TXT",
-            data=result,
+            data=display_result,
             file_name="assessment.txt",
             mime="text/plain",
             use_container_width=True,
