@@ -1,7 +1,9 @@
 
 import os
+from io import BytesIO
 
 import streamlit as st
+from docx import Document
 from fpdf import FPDF
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -265,6 +267,28 @@ def create_pdf(content):
         )
 
     return bytes(pdf.output())
+def create_docx(content):
+    document = Document()
+
+    for line in content.splitlines():
+        clean_line = (
+            line.replace("**", "")
+            .replace("#", "")
+            .replace("📝", "")
+            .replace("👨‍🏫", "")
+            .replace("👨‍🎓", "")
+        )
+
+        if clean_line.strip():
+            document.add_paragraph(clean_line)
+        else:
+            document.add_paragraph("")
+
+    buffer = BytesIO()
+    document.save(buffer)
+    buffer.seek(0)
+
+    return buffer.getvalue()
 
 def generate_with_openai(prompt):
     api_key = os.getenv("OPENAI_API_KEY")
@@ -369,6 +393,15 @@ Use clear, age-appropriate, and academically correct language.
             data=pdf_data,
             file_name="assessment.pdf",
             mime="application/pdf",
+            use_container_width=True,
+        )
+        docx_data = create_docx(display_result)
+
+        st.download_button(
+            label="📘 Download Assessment as Word",
+            data=docx_data,
+            file_name="assessment.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True,
         )
 else:
